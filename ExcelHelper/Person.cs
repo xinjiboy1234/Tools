@@ -1,4 +1,5 @@
 ﻿using ExcelTools;
+using ExcelTools.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,11 +8,13 @@ namespace ExcelHelper
 {
     public class Person
     {
-        [Head("ID")]
+        [ExcelHeadDisplay("ID")]
         public int Id { get; set; }
-        [Head("名称")]
+        [ExcelHeadDisplay("名称")]
         public string Name { get; set; }
-        [Head("选项")]
+        [ExcelHeadDisplay("选项")]
         public Status Status { get; set; }
+        [ExcelHeadDisplay("Quantity")]
+        public decimal Quantity { get; set; }
     }
 }
