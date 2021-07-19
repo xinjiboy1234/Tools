@@ -30,7 +30,7 @@ namespace ExcelHelper
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             var et = new ExcelHelper<Person>();
-            et.GetDataListByExcelPath(@"D:\files\project\test_files\1.xlsx");
+            et.GetDataListByExcelPath($@"{AppDomain.CurrentDomain.BaseDirectory}1.xlsx");
         }
     }
 }

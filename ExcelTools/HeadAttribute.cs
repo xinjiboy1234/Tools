@@ -2,7 +2,7 @@
 
 namespace ExcelTools
 {
-    [AttributeUsage(AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class HeadAttribute : Attribute
     {
         public string Head { get; set; }

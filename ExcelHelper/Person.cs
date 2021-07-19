@@ -12,6 +12,6 @@ namespace ExcelHelper
         [Head("名称")]
         public string Name { get; set; }
         [Head("选项")]
-        public string Option { get; set; }
+        public Status Status { get; set; }
     }
 }
