@@ -30,7 +30,17 @@ namespace ExcelHelper
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             var et = new ExcelHelper<Person>();
-            et.GetDataListByExcelPath($@"{AppDomain.CurrentDomain.BaseDirectory}1.xlsx");
+            var p = new Person
+            {
+                Id = 123,
+                Status = Status.USE,
+                Status1 = Status.UNUSE,
+                Name = "ddd",
+                Quantity = (decimal)123.12
+            };
+            // et.SaveExcelFromCollection(new List<Person>{p}, $@"{AppDomain.CurrentDomain.BaseDirectory}\2.xlsx");
+
+            var dataListByExcelPath = et.GetDataListByExcelPath($@"{AppDomain.CurrentDomain.BaseDirectory}2.xlsx");
         }
     }
 }

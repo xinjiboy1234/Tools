@@ -45,7 +45,7 @@ namespace ExcelTools
                 foreach (var (key, value) in colIndexDictionary)
                 {
                     var prop = props?.FirstOrDefault(x => x.Name == value.Name);
-                    FillValueToProperty(ref prop, t, workSheet.Cells[i, key].Value.ToString(),
+                    FillValueToProperty(ref prop, t, workSheet.Cells[i, key].Value?.ToString(),
                         dictionaryOfEnumMemberAndDescription);
                 }
 
@@ -90,6 +90,128 @@ namespace ExcelTools
             return list;
         }
 
+        /// <summary>
+        /// 保存Excel
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="path"></param>
+        /// <exception cref="Exception"></exception>
+        public void SaveExcelFromCollection(List<T> data, string path)
+        {
+            if (data == null) throw new Exception("the data is required");
+
+            using var excelPackage = new ExcelPackage(new FileInfo(path));
+            var excelWorkSheet = excelPackage.Workbook.Worksheets.Add("Sheet1");
+            var dt = data.FirstOrDefault();
+            // 先获取字段显示顺序
+            var sortedPropertyInfos = SortingObjectProperties(dt).ToList();
+            // 数据中包含的枚举类型的显示值与值的键值对，用于使用枚举值获取，字段显示值
+            var enumDictionary = GetEumDictionary(dt);
+            // 根据排序的字段顺序显示头部
+            SetExcelHead(sortedPropertyInfos, ref excelWorkSheet);
+            // 根据排序的字段顺序填充数据
+            FillDataToExcel(data, ref excelWorkSheet, enumDictionary, sortedPropertyInfos);
+            // 保存文件
+            excelPackage.Save();
+        }
+
+        /// <summary>
+        /// 设置头部
+        /// </summary>
+        /// <param name="sortedPropertyInfos"></param>
+        /// <param name="excelWorkSheet"></param>
+        private void SetExcelHead(List<PropertyInfo> sortedPropertyInfos, ref ExcelWorksheet excelWorkSheet)
+        {
+            var col = 1;
+            foreach (var propertyInfo in sortedPropertyInfos)
+            {
+                excelWorkSheet.Cells[1, col].Value = propertyInfo
+                    .GetCustomAttribute<ExcelHeadDisplayAttribute>()?
+                    .HeadDisplay;
+
+                col++;
+            }
+        }
+
+        /// <summary>
+        /// 将数据填充到Excel中
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="excelWorkSheet"></param>
+        /// <param name="enumDictionary"></param>
+        /// <param name="sortedPropertyInfos"></param>
+        private void FillDataToExcel(List<T> data, ref ExcelWorksheet excelWorkSheet,
+            Dictionary<string, Dictionary<string, object>> enumDictionary, List<PropertyInfo> sortedPropertyInfos)
+        {
+            var row = 2;
+            foreach (var item in data)
+            {
+                var col = 1;
+                foreach (var propertyInfo in sortedPropertyInfos)
+                {
+                    if (propertyInfo.PropertyType.IsEnum)
+                    {
+                        var tempDictionary = enumDictionary[propertyInfo.PropertyType.FullName ?? string.Empty];
+                        SetOptionForExcelCell(ref excelWorkSheet, row, col, tempDictionary);
+                        excelWorkSheet.Cells[row, col].Value = tempDictionary
+                            .FirstOrDefault(x => x.Value.Equals(propertyInfo.GetValue(item))).Key;
+                    }
+                    else
+                    {
+                        excelWorkSheet.Cells[row, col].Value = propertyInfo.GetValue(item);
+                    }
+
+                    col++;
+                }
+
+                row++;
+            }
+        }
+
+        /// <summary>
+        /// excel 设置下拉框
+        /// </summary>
+        /// <param name="excelWorkSheet"></param>
+        /// <param name="row">行</param>
+        /// <param name="col">列</param>
+        /// <param name="enumMemberDictionary">枚举值与标注特性的键值对</param>
+        /// <param name="prompt">提示信息</param>
+        /// <param name="showPrompt">是否显示提示信息</param>
+        private void SetOptionForExcelCell(ref ExcelWorksheet excelWorkSheet, int row, int col,
+            Dictionary<string, object> enumMemberDictionary, string prompt = "",
+            bool showPrompt = false)
+        {
+            var excelDataValidationList =
+                excelWorkSheet.DataValidations.AddListValidation(excelWorkSheet.Cells[row, col].Address);
+
+            foreach (var key in enumMemberDictionary.Keys)
+            {
+                excelDataValidationList.Formula.Values.Add(key);
+            }
+
+            excelDataValidationList.Prompt = prompt;
+            excelDataValidationList.ShowInputMessage = showPrompt;
+        }
+
+        /// <summary>
+        /// 获取枚举值与标注说明的键值对
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        private Dictionary<string, Dictionary<string, object>> GetEumDictionary(T obj)
+        {
+            var result = new Dictionary<string, Dictionary<string, object>>();
+            var propertyInfos = obj.GetType().GetProperties();
+            foreach (var propertyInfo in propertyInfos)
+            {
+                if (!propertyInfo.PropertyType.IsEnum) continue;
+                if (result.ContainsKey(propertyInfo.PropertyType.FullName ?? string.Empty)) continue;
+                result.Add(propertyInfo.PropertyType.FullName ?? string.Empty,
+                    GetEnumMemberDescriptionAndValueMapping(propertyInfo));
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// 获取excel表头顺序和与其对应类的属性键值对
@@ -109,9 +231,11 @@ namespace ExcelTools
                 {
                     if (string.IsNullOrEmpty(propInfo.PropertyType.FullName))
                         throw new Exception("property fullname is null or empty");
-                    if (enumProperties.ContainsKey(propInfo.PropertyType.FullName)) continue;
-                    enumProperties.Add(propInfo.PropertyType.FullName,
-                        GetEnumMemberDescriptionAndValueMapping(propInfo));
+                    if (!enumProperties.ContainsKey(propInfo.PropertyType.FullName))
+                    {
+                        enumProperties.Add(propInfo.PropertyType.FullName,
+                            GetEnumMemberDescriptionAndValueMapping(propInfo));
+                    }
                 }
 
                 colIndexDictionary[i] = propInfo;
@@ -119,6 +243,19 @@ namespace ExcelTools
 
             return colIndexDictionary;
         }
+
+        /// <summary>
+        /// 根据实体类上标注的字段显示顺序进行排序
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        private IEnumerable<PropertyInfo> SortingObjectProperties(T obj)
+        {
+            return obj.GetType()
+                .GetProperties()
+                .OrderBy(x => x.GetCustomAttribute<ExcelHeadDisplayAttribute>()?.Index);
+        }
+
 
         /// <summary>
         /// 根据特性的描述查询属性
@@ -141,11 +278,11 @@ namespace ExcelTools
             if (!propertyInfo.PropertyType.IsEnum) return null;
             var enumValues = propertyInfo.PropertyType.GetEnumValues();
             var enumDictionary = new Dictionary<string, object>();
-            foreach (string value in enumValues)
+            foreach (var value in enumValues)
             {
-                if (string.IsNullOrEmpty(value))
+                if (string.IsNullOrEmpty(value.ToString()))
                     throw new Exception($"the {propertyInfo.PropertyType}'s enumeration value is null");
-                var memberAttr = propertyInfo.PropertyType.GetMember(value).First()
+                var memberAttr = propertyInfo.PropertyType.GetMember(value.ToString() ?? string.Empty).First()
                     .GetCustomAttribute<ExcelOptionItemDisplayAttribute>();
                 if (memberAttr == null) throw new Exception($"the {propertyInfo.PropertyType}'s attribute is null");
                 enumDictionary[memberAttr.OptionDisplay] = value;

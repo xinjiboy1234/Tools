@@ -8,15 +8,15 @@ namespace ExcelHelper
 {
     public class Person
     {
-        [ExcelHeadDisplay("ID")]
+        [ExcelHeadDisplay("ID", 1)]
         public int Id { get; set; }
-        [ExcelHeadDisplay("名称")]
+        [ExcelHeadDisplay("名称", 2)]
         public string Name { get; set; }
-        [ExcelHeadDisplay("选项")]
+        [ExcelHeadDisplay("选项",4)]
         public Status Status { get; set; }
-        [ExcelHeadDisplay("Quantity")]
+        [ExcelHeadDisplay("Quantity",5)]
         public decimal Quantity { get; set; }
-        [ExcelHeadDisplay("选项1")]
+        [ExcelHeadDisplay("选项1",3)]
         public Status Status1 { get; set; }
     }
 }
