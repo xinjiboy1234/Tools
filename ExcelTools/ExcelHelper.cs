@@ -8,6 +8,10 @@ using System.Reflection;
 
 namespace ExcelTools
 {
+    /// <summary>
+    /// Excel 帮助类
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class ExcelHelper<T> where T : class, new()
     {
         public ExcelHelper()
@@ -29,18 +33,20 @@ namespace ExcelTools
             // 存储枚举类成员和描述对应的键值对集合
             var dictionaryOfEnumMemberAndDescription = new Dictionary<string, Dictionary<string, object>>();
             // 根据Excel头部与类的标注信息想对应查找其属性，并存储与键值对中
-            var colIndexDictionary = GetColumnIndexAndPropertiesMapping(workSheet, ref dictionaryOfEnumMemberAndDescription);
+            var colIndexDictionary =
+                GetColumnIndexAndPropertiesMapping(workSheet, ref dictionaryOfEnumMemberAndDescription);
 
             var list = new List<T>();
             for (var i = 2; i <= workSheet.Dimension.End.Row; i++)
             {
                 //var t = new T();
-                var t = (T)Activator.CreateInstance(typeof(T));
-                var props = t.GetType().GetProperties();
-                foreach (var item in colIndexDictionary)
+                var t = (T) Activator.CreateInstance(typeof(T));
+                var props = t?.GetType().GetProperties();
+                foreach (var (key, value) in colIndexDictionary)
                 {
-                    var prop = props.FirstOrDefault(x => x.Name == item.Value.Name);
-                    FillValueToProperty(ref prop, t, workSheet.Cells[i, item.Key].Value, dictionaryOfEnumMemberAndDescription);
+                    var prop = props?.FirstOrDefault(x => x.Name == value.Name);
+                    FillValueToProperty(ref prop, t, workSheet.Cells[i, key].Value.ToString(),
+                        dictionaryOfEnumMemberAndDescription);
                 }
 
                 list.Add(t);
@@ -62,18 +68,20 @@ namespace ExcelTools
             // 存储枚举类成员和描述对应的键值对集合
             var dictionaryOfEnumMemberAndDescription = new Dictionary<string, Dictionary<string, object>>();
             // 根据Excel头部与类的标注信息想对应查找其属性，并存储与键值对中
-            var colIndexDictionary = GetColumnIndexAndPropertiesMapping(workSheet, ref dictionaryOfEnumMemberAndDescription);
+            var colIndexDictionary =
+                GetColumnIndexAndPropertiesMapping(workSheet, ref dictionaryOfEnumMemberAndDescription);
 
             var list = new List<T>();
             for (var i = 2; i <= workSheet.Dimension.End.Row; i++)
             {
                 //var t = new T();
-                var t = (T)Activator.CreateInstance(typeof(T));
-                var props = t.GetType().GetProperties();
-                foreach (var item in colIndexDictionary)
+                var t = (T) Activator.CreateInstance(typeof(T));
+                var props = t?.GetType().GetProperties();
+                foreach (var (key, value) in colIndexDictionary)
                 {
-                    var prop = props.FirstOrDefault(x => x.Name == item.Value.Name);
-                    FillValueToProperty(ref prop, t, workSheet.Cells[i, item.Key].Value, dictionaryOfEnumMemberAndDescription);
+                    var prop = props?.FirstOrDefault(x => x.Name == value.Name);
+                    FillValueToProperty(ref prop, t, workSheet.Cells[i, key].Value.ToString(),
+                        dictionaryOfEnumMemberAndDescription);
                 }
 
                 list.Add(t);
@@ -83,15 +91,14 @@ namespace ExcelTools
         }
 
 
-
-
         /// <summary>
         /// 获取excel表头顺序和与其对应类的属性键值对
         /// </summary>
         /// <param name="excelWorksheet"></param>
         /// <param name="enumProperties"></param>
         /// <returns></returns>
-        private Dictionary<int, PropertyInfo> GetColumnIndexAndPropertiesMapping(ExcelWorksheet excelWorksheet, ref Dictionary<string, Dictionary<string, object>> enumProperties)
+        private Dictionary<int, PropertyInfo> GetColumnIndexAndPropertiesMapping(ExcelWorksheet excelWorksheet,
+            ref Dictionary<string, Dictionary<string, object>> enumProperties)
         {
             var colIndexDictionary = new Dictionary<int, PropertyInfo>();
             for (var i = excelWorksheet.Dimension.Start.Column; i <= excelWorksheet.Dimension.End.Column; i++)
@@ -100,8 +107,13 @@ namespace ExcelTools
                 // 如果属性类型是枚举类型, 就存储一份枚举成员与特性标记的映射键值对
                 if (propInfo.PropertyType.IsEnum)
                 {
-                    enumProperties[propInfo.PropertyType.FullName] = GetEnumMemberDescriptionAndValueMapping(propInfo);
+                    if (string.IsNullOrEmpty(propInfo.PropertyType.FullName))
+                        throw new Exception("property fullname is null or empty");
+                    if (enumProperties.ContainsKey(propInfo.PropertyType.FullName)) continue;
+                    enumProperties.Add(propInfo.PropertyType.FullName,
+                        GetEnumMemberDescriptionAndValueMapping(propInfo));
                 }
+
                 colIndexDictionary[i] = propInfo;
             }
 
@@ -115,7 +127,8 @@ namespace ExcelTools
         /// <returns></returns>
         private PropertyInfo GetPropertyInfoByAttributeDescription(string description)
         {
-            return typeof(T).GetRuntimeProperties().FirstOrDefault(x => x.GetCustomAttribute<ExcelHeadDisplayAttribute>()?.HeadDisplay == description);
+            return typeof(T).GetRuntimeProperties().FirstOrDefault(x =>
+                x.GetCustomAttribute<ExcelHeadDisplayAttribute>()?.HeadDisplay == description);
         }
 
         /// <summary>
@@ -127,14 +140,18 @@ namespace ExcelTools
         {
             if (!propertyInfo.PropertyType.IsEnum) return null;
             var enumValues = propertyInfo.PropertyType.GetEnumValues();
-            var enumDictionnary = new Dictionary<string, object>();
-            foreach (var value in enumValues)
+            var enumDictionary = new Dictionary<string, object>();
+            foreach (string value in enumValues)
             {
-                var memberAttr = propertyInfo.PropertyType.GetMember(value.ToString()).First().GetCustomAttribute<ExcelOptionItemDisplayAttribute>();
-                enumDictionnary[memberAttr.OptionDisplay] = value;
+                if (string.IsNullOrEmpty(value))
+                    throw new Exception($"the {propertyInfo.PropertyType}'s enumeration value is null");
+                var memberAttr = propertyInfo.PropertyType.GetMember(value).First()
+                    .GetCustomAttribute<ExcelOptionItemDisplayAttribute>();
+                if (memberAttr == null) throw new Exception($"the {propertyInfo.PropertyType}'s attribute is null");
+                enumDictionary[memberAttr.OptionDisplay] = value;
             }
 
-            return enumDictionnary;
+            return enumDictionary;
         }
 
         /// <summary>
@@ -143,7 +160,9 @@ namespace ExcelTools
         /// <param name="prop"></param>
         /// <param name="propOwner"></param>
         /// <param name="value"></param>
-        private void FillValueToProperty(ref PropertyInfo prop, object propOwner, object value, Dictionary<string, Dictionary<string, object>> enumDictionary)
+        /// <param name="enumDictionary"></param>
+        private void FillValueToProperty(ref PropertyInfo prop, object propOwner, string value,
+            Dictionary<string, Dictionary<string, object>> enumDictionary)
         {
             if (prop.PropertyType == typeof(int))
             {
@@ -189,14 +208,13 @@ namespace ExcelTools
 
             if (prop.PropertyType == typeof(string))
             {
-                prop.SetValue(propOwner, value.ToString());
+                prop.SetValue(propOwner, value);
                 return;
             }
 
-            if (prop.PropertyType.IsEnum)
-            {
-                prop.SetValue(propOwner, enumDictionary[prop.PropertyType.FullName][value.ToString()]);
-            }
+            if (!prop.PropertyType.IsEnum) return;
+            if (string.IsNullOrEmpty(prop.PropertyType.FullName)) return;
+            prop.SetValue(propOwner, enumDictionary[prop.PropertyType.FullName][value]);
         }
     }
 }

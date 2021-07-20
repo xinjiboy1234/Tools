@@ -16,5 +16,7 @@ namespace ExcelHelper
         public Status Status { get; set; }
         [ExcelHeadDisplay("Quantity")]
         public decimal Quantity { get; set; }
+        [ExcelHeadDisplay("选项1")]
+        public Status Status1 { get; set; }
     }
 }
