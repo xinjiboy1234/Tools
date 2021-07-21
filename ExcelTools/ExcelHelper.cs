@@ -2,6 +2,7 @@
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -125,10 +126,13 @@ namespace ExcelTools
             var col = 1;
             foreach (var propertyInfo in sortedPropertyInfos)
             {
-                excelWorkSheet.Cells[1, col].Value = propertyInfo
+                var cell = excelWorkSheet.Cells[1, col];
+                cell.Value = propertyInfo
                     .GetCustomAttribute<ExcelHeadDisplayAttribute>()?
                     .HeadDisplay;
 
+                ExcelStyleTools.SetBorder(ref cell, Color.Black);
+                ExcelStyleTools.SetFontBold(ref cell, true);
                 col++;
             }
         }
@@ -149,18 +153,20 @@ namespace ExcelTools
                 var col = 1;
                 foreach (var propertyInfo in sortedPropertyInfos)
                 {
+                    var cell = excelWorkSheet.Cells[row, col];
                     if (propertyInfo.PropertyType.IsEnum)
                     {
                         var tempDictionary = enumDictionary[propertyInfo.PropertyType.FullName ?? string.Empty];
                         SetOptionForExcelCell(ref excelWorkSheet, row, col, tempDictionary);
-                        excelWorkSheet.Cells[row, col].Value = tempDictionary
+                        cell.Value = tempDictionary
                             .FirstOrDefault(x => x.Value.Equals(propertyInfo.GetValue(item))).Key;
                     }
                     else
                     {
-                        excelWorkSheet.Cells[row, col].Value = propertyInfo.GetValue(item);
+                        cell.Value = propertyInfo.GetValue(item);
                     }
 
+                    ExcelStyleTools.SetBorder(ref cell, Color.Black);
                     col++;
                 }
 

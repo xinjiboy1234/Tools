@@ -38,9 +38,9 @@ namespace ExcelHelper
                 Name = "ddd",
                 Quantity = (decimal)123.12
             };
-            // et.SaveExcelFromCollection(new List<Person>{p}, $@"{AppDomain.CurrentDomain.BaseDirectory}\2.xlsx");
+            et.SaveExcelFromCollection(new List<Person>{p}, $@"{AppDomain.CurrentDomain.BaseDirectory}\2.xlsx");
 
-            var dataListByExcelPath = et.GetDataListByExcelPath($@"{AppDomain.CurrentDomain.BaseDirectory}2.xlsx");
+            // var dataListByExcelPath = et.GetDataListByExcelPath($@"{AppDomain.CurrentDomain.BaseDirectory}2.xlsx");
         }
     }
 }
