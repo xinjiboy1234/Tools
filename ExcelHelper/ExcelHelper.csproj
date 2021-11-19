@@ -7,6 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="EPM-PUR-Open Standard PO Report-V5_3_NA3_NAJ%285095218%29.xlsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="EPM-PUR-Open Standard PO Report-V5_3_NA3_NAJ(5095218).xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ExcelTools\ExcelTools.csproj" />
   </ItemGroup>
 

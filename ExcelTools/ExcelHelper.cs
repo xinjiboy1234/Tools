@@ -25,7 +25,7 @@ namespace ExcelTools
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public IEnumerable<T> GetDataListByExcelPath(string path)
+        public IEnumerable<T> GetDataListByExcelPath(string path, int titleIndex = 2)
         {
             var fi = new FileInfo(path);
             using var excelPackage = new ExcelPackage(fi);
@@ -38,10 +38,10 @@ namespace ExcelTools
                 GetColumnIndexAndPropertiesMapping(workSheet, ref dictionaryOfEnumMemberAndDescription);
 
             var list = new List<T>();
-            for (var i = 2; i <= workSheet.Dimension.End.Row; i++)
+            for (var i = titleIndex; i <= workSheet.Dimension.End.Row; i++)
             {
                 //var t = new T();
-                var t = (T) Activator.CreateInstance(typeof(T));
+                var t = (T)Activator.CreateInstance(typeof(T));
                 var props = t?.GetType().GetProperties();
                 foreach (var (key, value) in colIndexDictionary)
                 {
@@ -61,7 +61,7 @@ namespace ExcelTools
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public IEnumerable<T> GetDataListByExcelStream(Stream stream)
+        public IEnumerable<T> GetDataListByExcelStream(Stream stream, int titleIndex = 2)
         {
             using var excelPackage = new ExcelPackage(stream);
             var workSheet = excelPackage.Workbook?.Worksheets?.FirstOrDefault();
@@ -69,14 +69,13 @@ namespace ExcelTools
             // 存储枚举类成员和描述对应的键值对集合
             var dictionaryOfEnumMemberAndDescription = new Dictionary<string, Dictionary<string, object>>();
             // 根据Excel头部与类的标注信息想对应查找其属性，并存储与键值对中
-            var colIndexDictionary =
-                GetColumnIndexAndPropertiesMapping(workSheet, ref dictionaryOfEnumMemberAndDescription);
+            var colIndexDictionary = GetColumnIndexAndPropertiesMapping(workSheet, ref dictionaryOfEnumMemberAndDescription, int titleIndex = 2);
 
             var list = new List<T>();
-            for (var i = 2; i <= workSheet.Dimension.End.Row; i++)
+            for (var i = titleIndex; i <= workSheet.Dimension.End.Row; i++)
             {
                 //var t = new T();
-                var t = (T) Activator.CreateInstance(typeof(T));
+                var t = (T)Activator.CreateInstance(typeof(T));
                 var props = t?.GetType().GetProperties();
                 foreach (var (key, value) in colIndexDictionary)
                 {
@@ -226,12 +225,13 @@ namespace ExcelTools
         /// <param name="enumProperties"></param>
         /// <returns></returns>
         private Dictionary<int, PropertyInfo> GetColumnIndexAndPropertiesMapping(ExcelWorksheet excelWorksheet,
-            ref Dictionary<string, Dictionary<string, object>> enumProperties)
+            ref Dictionary<string, Dictionary<string, object>> enumProperties, int titleIndex = 2)
         {
             var colIndexDictionary = new Dictionary<int, PropertyInfo>();
             for (var i = excelWorksheet.Dimension.Start.Column; i <= excelWorksheet.Dimension.End.Column; i++)
             {
-                var propInfo = GetPropertyInfoByAttributeDescription(excelWorksheet.Cells[1, i].Value.ToString());
+                var propInfo = GetPropertyInfoByAttributeDescription(excelWorksheet.Cells[1, i].Value?.ToString());
+                if (propInfo == null) continue;
                 // 如果属性类型是枚举类型, 就存储一份枚举成员与特性标记的映射键值对
                 if (propInfo.PropertyType.IsEnum)
                 {
