@@ -7,10 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="2.xlsx" />
     <None Remove="EPM-PUR-Open Standard PO Report-V5_3_NA3_NAJ%285095218%29.xlsx" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="2.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="EPM-PUR-Open Standard PO Report-V5_3_NA3_NAJ(5095218).xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

@@ -31,6 +31,7 @@ namespace ExcelHelper
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             var et = new ExcelHelper<OpenPO01>();
+            var personEt = new ExcelHelper<Person>();
             var p = new Person
             {
                 Id = 123,
@@ -41,7 +42,8 @@ namespace ExcelHelper
             };
             //et.SaveExcelFromCollection(new List<Person>{p}, $@"{AppDomain.CurrentDomain.BaseDirectory}\2.xlsx");
 
-            var dataListByExcelPath = et.GetDataListByExcelPath($@"{AppDomain.CurrentDomain.BaseDirectory}EPM-PUR-Open Standard PO Report-V5_3_NA3_NAJ(5095218).xlsx", 4);
+            //var dataListByExcelPath = et.GetDataListByExcelPath($@"{AppDomain.CurrentDomain.BaseDirectory}EPM-PUR-Open Standard PO Report-V5_3_NA3_NAJ(5095218).xlsx", 4);
+            var dataListByExcelPath = personEt.GetDataListByExcelPath($@"{AppDomain.CurrentDomain.BaseDirectory}2.xlsx", 1);
 
             var ss = string.Empty;
         }
